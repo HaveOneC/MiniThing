@@ -22,13 +22,6 @@ typedef struct _pfrn_name {
 	DWORDLONG pfrn;
 	CString filename;
 }Pfrn_Name;
-
-typedef struct FileInfo {
-	CString fileName;
-	CString path;
-	string creationTime;
-}FileInfo;
-
 typedef map<DWORDLONG, Pfrn_Name> Frn_Pfrn_Name_Map;
 
 class cmpStrStr {
@@ -41,13 +34,9 @@ public:
 	bool cmpStrFilename(CString str, CString filename);
 	bool infilename(CString &strtmp, CString &filenametmp);
 	bool cmpStrFiletime(string time, CString path);
-	string getCreationTime() {
-		return creationTime;
-	}
 private:
 	bool uplow;
 	bool isOrder;
-	string creationTime;
 };
 
 
@@ -64,15 +53,15 @@ public:
 
 	bool initVolume() {
 		if (
-			// 2.è·å–é©±åŠ¨ç›˜å¥æŸ„
+			// 2.»ñÈ¡Çı¶¯ÅÌ¾ä±ú
 			getHandle() &&
-			// 3.åˆ›å»ºUSNæ—¥å¿—
+			// 3.´´½¨USNÈÕÖ¾
 			createUSN() &&
-			// 4.è·å–USNæ—¥å¿—ä¿¡æ¯
+			// 4.»ñÈ¡USNÈÕÖ¾ĞÅÏ¢
 			getUSNInfo() &&
-			// 5.è·å– USN Journal æ–‡ä»¶çš„åŸºæœ¬ä¿¡æ¯
+			// 5.»ñÈ¡ USN Journal ÎÄ¼şµÄ»ù±¾ĞÅÏ¢
 			getUSNJournal() &&
-			// 06. åˆ é™¤ USN æ—¥å¿—æ–‡ä»¶ ( ä¹Ÿå¯ä»¥ä¸åˆ é™¤ ) 
+			// 06. É¾³ı USN ÈÕÖ¾ÎÄ¼ş ( Ò²¿ÉÒÔ²»É¾³ı ) 
 			deleteUSN()) {
 			return true;
 		}
@@ -101,33 +90,29 @@ public:
 	bool getUSNJournal();
 	bool deleteUSN();
 
-	vector<FileInfo> findFile(CString str, string time, cmpStrStr& cmpstrstr, vector<string>* pignorelist);
+	vector<CString> findFile(CString str, string time, cmpStrStr& cmpstrstr, vector<string>* pignorelist);
 
 	CString getPath(DWORDLONG frn, CString &path);
 
-	
-	vector<FileInfo> rightFile;	 // ç»“æœ
-	//vector<CString> rightFile;	 // ç»“æœ
-	
+	vector<CString> rightFile;	 // ½á¹û
+
 private:
 	char vol;
 	HANDLE hVol;
-	vector<Name_Cur> VecNameCur;		// æŸ¥æ‰¾1
+	vector<Name_Cur> VecNameCur;		// ²éÕÒ1
 	Name_Cur nameCur;
 	Pfrn_Name pfrnName;
-	Frn_Pfrn_Name_Map frnPfrnNameMap;	// æŸ¥æ‰¾2
+	Frn_Pfrn_Name_Map frnPfrnNameMap;	// ²éÕÒ2
 
 
 	CString path;
-	FileInfo fileinfo;
-	string creationTime;
-	
+
 	USN_JOURNAL_DATA ujd;
 	CREATE_USN_JOURNAL_DATA cujd;
 };
 
 CString Volume::getPath(DWORDLONG frn, CString &path) {
-	// æŸ¥æ‰¾2
+	// ²éÕÒ2
 	Frn_Pfrn_Name_Map::iterator it = frnPfrnNameMap.find(frn);
 	if (it != frnPfrnNameMap.end()) {
 		if (0 != it->second.pfrn) {
@@ -140,30 +125,27 @@ CString Volume::getPath(DWORDLONG frn, CString &path) {
 	return path;
 }
 
-vector<FileInfo> Volume::findFile(CString str, string time, cmpStrStr& cmpstrstr, vector<string>* pignorelist) {
+vector<CString> Volume::findFile(CString str, string time, cmpStrStr& cmpstrstr, vector<string>* pignorelist) {
 
-	// éå† VecNameCur
-	// é€šè¿‡ä¸€ä¸ªåŒ¹é…å‡½æ•°ï¼Œ å¾—åˆ°ç¬¦åˆçš„ filename
-	// ä¼ å…¥ frnPfrnNameMapï¼Œé€’å½’å¾—åˆ°è·¯å¾„
+	// ±éÀú VecNameCur
+	// Í¨¹ıÒ»¸öÆ¥Åäº¯Êı£¬ µÃµ½·ûºÏµÄ filename
+	// ´«Èë frnPfrnNameMap£¬µİ¹éµÃµ½Â·¾¶
 
 	for (vector<Name_Cur>::const_iterator cit = VecNameCur.begin();
 	cit != VecNameCur.end(); ++cit) {
-		if (cmpstrstr.cmpStrFilename(str, cit->filename)) {		
-			fileinfo.path = L"";
-			fileinfo.fileName = L"";
+		if (cmpstrstr.cmpStrFilename(str, cit->filename)) {
 			path.Empty();
-			// è¿˜åŸ è·¯å¾„
+			// »¹Ô­ Â·¾¶
 			// vol:\  path \ cit->filename
 			getPath(cit->pfrn, path);
-			fileinfo.path=path;
-			fileinfo.fileName = cit->filename;
 			path += cit->filename;
+			// pathÒÑÊÇÈ«Â·¾¶	
 			if (isIgnore(pignorelist)) {
 				continue;
 			}
+
 			if (cmpstrstr.cmpStrFiletime(time, path)) {
-				fileinfo.creationTime = cmpstrstr.getCreationTime();
-				rightFile.push_back(fileinfo);
+				rightFile.push_back(path);
 			}
 			//path.Empty();
 		}
@@ -173,17 +155,17 @@ vector<FileInfo> Volume::findFile(CString str, string time, cmpStrStr& cmpstrstr
 }
 
 bool cmpStrStr::cmpStrFilename(CString str, CString filename) {
-	// TODO åŠ å…¥åˆ«çš„åŒ¹é…å‡½æ•°
+	// TODO ¼ÓÈë±ğµÄÆ¥Åäº¯Êı
 
 	int pos = 0;
 	int end = str.GetLength();
 	while (pos < end) {
-		// å¯¹äºstrï¼Œå–å¾— æ¯ä¸ªç©ºæ ¼åˆ†å¼€ä¸ºçš„å…³é”®è¯
+		// ¶ÔÓÚstr£¬È¡µÃ Ã¿¸ö¿Õ¸ñ·Ö¿ªÎªµÄ¹Ø¼ü´Ê
 		pos = str.Find(_T(' '));
 
 		CString strtmp;
 		if (pos == -1) {
-			// æ— ç©ºæ ¼
+			// ÎŞ¿Õ¸ñ
 			strtmp = str;
 			pos = end;
 		}
@@ -212,7 +194,7 @@ bool cmpStrStr::infilename(CString &strtmp, CString &filename) {
 	CString filenametmp(filename);
 	int pos;
 	if (!uplow) {
-		// å¤§å°å†™æ•æ„Ÿ
+		// ´óĞ¡Ğ´Ãô¸Ğ
 		filenametmp.MakeLower();
 		pos = filename.Compare(strtmp);
 		//pos = filenametmp.Find(strtmp.MakeLower());
@@ -229,26 +211,24 @@ bool cmpStrStr::infilename(CString &strtmp, CString &filename) {
 		return false;
 	}
 	if (!isOrder) {
-		// æ— é¡ºåº
+		// ÎŞË³Ğò
 		filename.Delete(0, pos + 1);
 	}
 
 	return true;
 }
-
 bool cmpStrStr::cmpStrFiletime(string time, CString path1) {
-	WIN32_FILE_ATTRIBUTE_DATA    attr = {0};     //æ–‡ä»¶å±æ€§ç»“æ„ä½“
+	WIN32_FILE_ATTRIBUTE_DATA    attr;     //ÎÄ¼şÊôĞÔ½á¹¹Ìå
 	GetFileAttributesEx(path1,
 		GetFileExInfoStandard,
-		&attr);        //è·å–æ–‡ä»¶å±æ€§
-	SYSTEMTIME createTime = {0};
+		&attr);        //»ñÈ¡ÎÄ¼şÊôĞÔ
+	SYSTEMTIME createTime;
 	GetSystemTime(&createTime);
-	FILETIME createFiletime = attr.ftCreationTime;//è·å–æ–‡ä»¶æ—¶é—´
-	FILETIME localTme = { 0 };
-	FileTimeToLocalFileTime(&createFiletime, &localTme);//å°†æ–‡ä»¶æ—¶é—´è½¬æ¢ä¸ºæœ¬åœ°æ–‡ä»¶æ—¶é—´
-	FileTimeToSystemTime(&localTme, &createTime);//å°†æ–‡ä»¶æ—¶é—´è½¬æ¢ä¸ºæœ¬åœ°ç³»ç»Ÿæ—¶é—´
+	FILETIME createFiletime = attr.ftCreationTime;//»ñÈ¡ÎÄ¼şÊ±¼ä
+	FILETIME localTme;
+	FileTimeToLocalFileTime(&createFiletime, &localTme);//½«ÎÄ¼şÊ±¼ä×ª»»Îª±¾µØÎÄ¼şÊ±¼ä
+	FileTimeToSystemTime(&localTme, &createTime);//½«ÎÄ¼şÊ±¼ä×ª»»Îª±¾µØÏµÍ³Ê±¼ä
 	CHAR buf[15] = { 0 };
-
 	sprintf(buf, "%04d%02d%02d%02d%02d%02d", createTime.wYear,
 		createTime.wMonth,
 		createTime.wDay,
@@ -257,7 +237,6 @@ bool cmpStrStr::cmpStrFiletime(string time, CString path1) {
 		createTime.wSecond);
 	string fileTime(buf);
 	if (fileTime.compare(time) > 0) {
-		creationTime = fileTime;
 		return true;
 	}
 	else {
@@ -266,17 +245,17 @@ bool cmpStrStr::cmpStrFiletime(string time, CString path1) {
 }
 
 bool Volume::getHandle() {
-	// ä¸º\\.\C:çš„å½¢å¼
+	// Îª\\.\C:µÄĞÎÊ½
 	CString lpFileName(_T("\\\\.\\c:"));
 	lpFileName.SetAt(4, vol);
 
 
 	hVol = CreateFile(lpFileName,
-		GENERIC_READ | GENERIC_WRITE, // å¯ä»¥ä¸º0
-		FILE_SHARE_READ | FILE_SHARE_WRITE, // å¿…é¡»åŒ…å«æœ‰FILE_SHARE_WRITE
+		GENERIC_READ | GENERIC_WRITE, // ¿ÉÒÔÎª0
+		FILE_SHARE_READ | FILE_SHARE_WRITE, // ±ØĞë°üº¬ÓĞFILE_SHARE_WRITE
 		NULL,
-		OPEN_EXISTING, // å¿…é¡»åŒ…å«OPEN_EXISTING, CREATE_ALWAYSå¯èƒ½ä¼šå¯¼è‡´é”™è¯¯
-		FILE_ATTRIBUTE_READONLY, // FILE_ATTRIBUTE_NORMALå¯èƒ½ä¼šå¯¼è‡´é”™è¯¯
+		OPEN_EXISTING, // ±ØĞë°üº¬OPEN_EXISTING, CREATE_ALWAYS¿ÉÄÜ»áµ¼ÖÂ´íÎó
+		FILE_ATTRIBUTE_READONLY, // FILE_ATTRIBUTE_NORMAL¿ÉÄÜ»áµ¼ÖÂ´íÎó
 		NULL);
 
 
@@ -285,13 +264,14 @@ bool Volume::getHandle() {
 	}
 	else {
 		return false;
-		exit(1);
+		//		exit(1);
+		MessageBox(NULL, _T("USN´íÎó"), _T("´íÎó"), MB_OK);
 	}
 }
 
 bool Volume::createUSN() {
-	cujd.MaximumSize = 0; // 0è¡¨ç¤ºä½¿ç”¨é»˜è®¤å€¼  
-	cujd.AllocationDelta = 0; // 0è¡¨ç¤ºä½¿ç”¨é»˜è®¤å€¼
+	cujd.MaximumSize = 0; // 0±íÊ¾Ê¹ÓÃÄ¬ÈÏÖµ  
+	cujd.AllocationDelta = 0; // 0±íÊ¾Ê¹ÓÃÄ¬ÈÏÖµ
 
 	DWORD br;
 	if (
@@ -337,20 +317,20 @@ bool Volume::getUSNJournal() {
 	med.LowUsn = ujd.FirstUsn;
 	med.HighUsn = ujd.NextUsn;
 
-	// æ ¹ç›®å½•
+	// ¸ùÄ¿Â¼
 	CString tmp(_T("C:"));
 	tmp.SetAt(0, vol);
 	frnPfrnNameMap[0x5000000000005].filename = tmp;
 	frnPfrnNameMap[0x5000000000005].pfrn = 0;
 
-#define BUF_LEN 0x10000	// å°½å¯èƒ½åœ°å¤§ï¼Œæé«˜æ•ˆç‡
+#define BUF_LEN 0x10000	// ¾¡¿ÉÄÜµØ´ó£¬Ìá¸ßĞ§ÂÊ
 
 	CHAR Buffer[BUF_LEN];
 	DWORD usnDataSize;
 	PUSN_RECORD UsnRecord;
 	int USN_counter = 0;
 
-	// ç»Ÿè®¡æ–‡ä»¶ä¸­...
+	// Í³¼ÆÎÄ¼şÖĞ...
 
 	while (0 != DeviceIoControl(hVol,
 		FSCTL_ENUM_USN_DATA,
@@ -363,11 +343,11 @@ bool Volume::getUSNJournal() {
 	{
 
 		DWORD dwRetBytes = usnDataSize - sizeof(USN);
-		// æ‰¾åˆ°ç¬¬ä¸€ä¸ª USN è®°å½•  
+		// ÕÒµ½µÚÒ»¸ö USN ¼ÇÂ¼  
 		UsnRecord = (PUSN_RECORD)(((PCHAR)Buffer) + sizeof(USN));
 
 		while (dwRetBytes>0) {
-			// è·å–åˆ°çš„ä¿¡æ¯  	
+			// »ñÈ¡µ½µÄĞÅÏ¢  	
 			CString CfileName(UsnRecord->FileName, UsnRecord->FileNameLength / 2);
 
 			pfrnName.filename = nameCur.filename = CfileName;
@@ -376,15 +356,15 @@ bool Volume::getUSNJournal() {
 			// Vector
 			VecNameCur.push_back(nameCur);
 
-			// æ„å»ºhash...
+			// ¹¹½¨hash...
 			frnPfrnNameMap[UsnRecord->FileReferenceNumber] = pfrnName;
-			// è·å–ä¸‹ä¸€ä¸ªè®°å½•  
+			// »ñÈ¡ÏÂÒ»¸ö¼ÇÂ¼  
 			DWORD recordLen = UsnRecord->RecordLength;
 			dwRetBytes -= recordLen;
 			UsnRecord = (PUSN_RECORD)(((PCHAR)UsnRecord) + recordLen);
 
 		}
-		// è·å–ä¸‹ä¸€é¡µæ•°æ® 
+		// »ñÈ¡ÏÂÒ»Ò³Êı¾İ 
 		med.StartFileReferenceNumber = *(USN *)&Buffer;
 	}
 
@@ -416,7 +396,7 @@ bool Volume::deleteUSN() {
 }
 
 /*
-*	è®¡ç®—ä¸€å…±æœ‰å‡ ä¸ªç›˜ç¬¦æ˜¯NTFSæ ¼å¼
+*	¼ÆËãÒ»¹²ÓĞ¼¸¸öÅÌ·ûÊÇNTFS¸ñÊ½
 */
 class InitData {
 public:
@@ -432,6 +412,15 @@ public:
 
 		return 1;
 	}
+	/*
+	static UINT initThread(LPVOID pParam) {
+	InitData * pObj = (InitData*)pParam;
+	if ( pObj ) {
+	return pObj->init(NULL);
+	}
+	return false;
+	}
+	*/
 	UINT init(LPVOID lp) {
 
 #ifdef TEST
@@ -444,6 +433,13 @@ public:
 				vol[j++] = cvol;
 			}
 		}
+		/*
+		CString showpro(_T("ÕıÔÚÍ³¼Æ"));
+		for ( i=0; i<j; ++i ) {
+		initvolumelist((LPVOID)vol[i]);
+		GetDlgItem(IDC_SHOWPRO)->SetWindowText(showpro + _T(vol[i]));
+		}
+		*/
 		return true;
 		}
 
